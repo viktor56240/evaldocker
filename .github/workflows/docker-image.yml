@@ -1,4 +1,4 @@
-ame: Docker Build and Deploy
+name: Docker Build and Deploy
 
 on:
   push:
@@ -26,13 +26,13 @@ jobs:
       env:
         COMMIT_SHA: ${{ github.sha }}
       run: |
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/my-python-app:${COMMIT_SHA} .
-        docker tag ${{ secrets.DOCKER_USERNAME }}/my-python-app:${COMMIT_SHA} ${{ secrets.DOCKER_USERNAME }}/my-python-app:latest
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/nodejs:${COMMIT_SHA} .
+        docker tag ${{ secrets.DOCKER_USERNAME }}/nodejs:${COMMIT_SHA} ${{ secrets.DOCKER_USERNAME }}/nodejs:latest
     # Push des tags dans le Docker Registry
     - name: Push Docker Images
       run: |
-        docker push ${{ secrets.DOCKER_USERNAME }}/my-python-app:${{ github.sha }}
-        docker push ${{ secrets.DOCKER_USERNAME }}/my-python-app:latest
+        docker push ${{ secrets.DOCKER_USERNAME }}/nodejs:${{ github.sha }}
+        docker push ${{ secrets.DOCKER_USERNAME }}/nodejs:latest
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -45,4 +45,4 @@ jobs:
           username: ${{ secrets.SWARM_MANAGER_USERNAME }}
           password: ${{ secrets.SWARM_MANAGER_PASSWORD }}
           port: ${{ secrets.SWARM_MANAGER_PORT }}
-          script: docker service update --image viktormadelaine/my-python-app:${{ github.sha }} --replicas=10 my-python-app
+          script: docker service update --image viktormadelaine/nodejs:${{ github.sha }} --replicas=10 nodejs
