@@ -1,0 +1,48 @@
+ame: Docker Build and Deploy
+
+on:
+  push:
+    branches:
+      - main  # Déclenchement sur la branche principale
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Vérification du code
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Connexion au Docker Registry
+    - name: Login to Docker Registry
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    # Construction et taggage de l'image Docker
+    - name: Build Docker Image with Commit SHA Tag
+      env:
+        COMMIT_SHA: ${{ github.sha }}
+      run: |
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/my-python-app:${COMMIT_SHA} .
+        docker tag ${{ secrets.DOCKER_USERNAME }}/my-python-app:${COMMIT_SHA} ${{ secrets.DOCKER_USERNAME }}/my-python-app:latest
+    # Push des tags dans le Docker Registry
+    - name: Push Docker Images
+      run: |
+        docker push ${{ secrets.DOCKER_USERNAME }}/my-python-app:${{ github.sha }}
+        docker push ${{ secrets.DOCKER_USERNAME }}/my-python-app:latest
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Update service image on Swarm manager
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SWARM_MANAGER_HOST }}
+          username: ${{ secrets.SWARM_MANAGER_USERNAME }}
+          password: ${{ secrets.SWARM_MANAGER_PASSWORD }}
+          port: ${{ secrets.SWARM_MANAGER_PORT }}
+          script: docker service update --image viktormadelaine/my-python-app:${{ github.sha }} --replicas=10 my-python-app
